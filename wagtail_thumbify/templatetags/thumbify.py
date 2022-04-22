@@ -39,6 +39,9 @@ class ThumbifyImageNode(template.Node):
         else:
             url = image.get_rendition('original').url
 
+        if settings.THUMBOR_IMAGE_URL_REPLACEMENT:
+            url = url.replace(settings.THUMBOR_IMAGE_URL_REPLACEMENT[0], settings.THUMBOR_IMAGE_URL_REPLACEMENT[1])
+
         kwargs = {
             'image_url': url,
             'smart': True,
