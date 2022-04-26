@@ -221,7 +221,7 @@ class ThumbifyImageNode(template.Node):
 
             pil_image.save(processed_image_filename, quality=85)
 
-        return processed_image_url
+        return str(processed_image_url)
 
 
 @register.tag(name='thumbify')
