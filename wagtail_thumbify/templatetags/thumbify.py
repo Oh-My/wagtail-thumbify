@@ -60,7 +60,7 @@ class ThumbifyImageNode(template.Node):
                 elif (context.get('request')):
                     image_url = context['request'].build_absolute_uri(image_url)
 
-            if settings.THUMBOR_IMAGE_URL_REPLACEMENT:
+            if getattr(settings, 'THUMBOR_IMAGE_URL_REPLACEMENT', False):
                 image_url = image_url.replace(settings.THUMBOR_IMAGE_URL_REPLACEMENT[0], settings.THUMBOR_IMAGE_URL_REPLACEMENT[1])
 
             filter_kwargs.update({
