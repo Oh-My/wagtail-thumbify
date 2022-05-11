@@ -157,6 +157,9 @@ class ThumbifyImageNode(template.Node):
         processed_image_filename = resized_dir.joinpath(image_name)
         processed_image_url = Path(settings.MEDIA_URL).joinpath('resized').joinpath(src_hash[0:2]).joinpath(image_name)
 
+        if processed_image_filename.exists():
+            return str(processed_image_url)   
+        
         with NamedTemporaryFile(mode='wb+') as tmp_image:
             if type(image) == WagtailImage:
                 pil_image = Image.open(original_image_path)
