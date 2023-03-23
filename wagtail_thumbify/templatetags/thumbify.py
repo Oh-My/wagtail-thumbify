@@ -16,6 +16,7 @@ import requests
 from pathlib import Path
 import os
 import hashlib
+import urllib.parse
 
 register = template.Library()
 
@@ -24,6 +25,33 @@ crypto = CryptoURL(key=settings.THUMBOR_SECURITY_KEY)
 logger = logging.getLogger('django')
 
 class ThumbifyImageNode(template.Node):
+    thumbor_filters_map = {
+        'brightness': 'brightness',
+        'background_color': 'background_color',
+        'blur': 'blur',
+        'contrast': 'contrast',
+        'convolution': 'convolution',
+        'cover': 'cover',
+        'equalize': 'equalize',
+        'fill': 'fill',
+        'focal': 'focal',
+        'format': 'format',
+        'grayscale': 'grayscale',
+        'max_bytes': 'max_bytes',
+        'no_upscale': 'no_upscale',
+        'proportion': 'proportion',
+        'quality': 'quality',
+        'rgb': 'rgb',
+        'rotate': 'rotate',
+        'round_corner': 'round_corner',
+        'saturation': 'saturation',
+        'sharpen': 'sharpen',
+        'stretch': 'stretch',
+        'strip_exif': 'strip\\_exif',
+        'strip_icc': 'strip\\_icc',
+        'upscale': 'upsacle',
+        'watermark': 'watermark'
+    }
     def __init__(self, image_expr, filter_spec, output_var_name=None, attrs={}):
         self.image_expr = image_expr
         self.output_var_name = output_var_name
@@ -45,6 +73,7 @@ class ThumbifyImageNode(template.Node):
         filter_kwargs = self.get_filter_kwargs()
 
         if settings.THUMBOR_USE and settings.THUMBOR_SECURITY_KEY and settings.THUMBOR_SERVER:
+
             if type(image) == SafeString:
                 image_url = str(image)
             elif type(image) == str:
@@ -62,6 +91,9 @@ class ThumbifyImageNode(template.Node):
 
             if getattr(settings, 'THUMBOR_IMAGE_URL_REPLACEMENT', False):
                 image_url = image_url.replace(settings.THUMBOR_IMAGE_URL_REPLACEMENT[0], settings.THUMBOR_IMAGE_URL_REPLACEMENT[1])
+
+            if getattr(settings, 'THUMBOR_QUOTE_URL', False):
+                image_url = urllib.parse.quote(image_url)
 
             filter_kwargs.update({
                 'image_url': image_url,
@@ -82,7 +114,6 @@ class ThumbifyImageNode(template.Node):
 
             processed_image_url = self.process_image(image=original_image, **filter_kwargs)
 
-
         if self.output_var_name:
             context[self.output_var_name] = {'url': processed_image_url}
             return ''
@@ -100,6 +131,8 @@ class ThumbifyImageNode(template.Node):
 
     def get_filter_kwargs(self):
         filter_kwargs = {}
+
+        filters = []
 
         for filter in self.filter_spec:
             filter_parts = filter.split('-')
@@ -121,6 +154,19 @@ class ThumbifyImageNode(template.Node):
                 filter_kwargs.update({'width': width})
                 filter_kwargs.update({'height': height})
                 filter_kwargs.update({'fit_in': True})
+
+            if filter_parts[0] in self.thumbor_filters_map:
+                filter_parts = filter.split('-', maxsplit=1)
+                name = filter_parts[0]
+                value = None
+                if len(filter_parts) > 1:
+                    value = filter_parts[1]
+                name = self.thumbor_filters_map[filter_parts[0]]
+
+                filters.append('%s(%s)' % (name, value or ''))
+
+        if filters:
+            filter_kwargs['filters'] = filters
 
         return filter_kwargs
 
@@ -158,8 +204,8 @@ class ThumbifyImageNode(template.Node):
         processed_image_url = Path(settings.MEDIA_URL).joinpath('resized').joinpath(src_hash[0:2]).joinpath(image_name)
 
         if processed_image_filename.exists():
-            return str(processed_image_url)   
-        
+            return str(processed_image_url)
+
         with NamedTemporaryFile(mode='wb+') as tmp_image:
             if type(image) == WagtailImage:
                 pil_image = Image.open(original_image_path)
