@@ -7,9 +7,9 @@ from django.utils.safestring import mark_safe, SafeString
 
 from wagtail.images.templatetags.wagtailimages_tags import (
     image as wagtail_image_tag,
-    allowed_filter_pattern,
 )
 from wagtail.images.models import Image as WagtailImage
+from wagtail.images.models import Filter
 from libthumbor import CryptoURL
 import re
 from wagtail.images.models import Rendition
@@ -26,6 +26,8 @@ register = template.Library()
 crypto = CryptoURL(key=settings.THUMBOR_SECURITY_KEY)
 
 logger = logging.getLogger("django")
+
+allowed_filter_pattern = Filter.spec_pattern
 
 
 class ThumbifyImageNode(template.Node):
